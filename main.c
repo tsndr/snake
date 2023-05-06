@@ -40,6 +40,34 @@ void init_snake(Snake *snake) {
     snake->hitWall = false;
 }
 
+bool check_collision(Position a, Position b) {
+    return a.x == b.x && a.y == b.y;
+}
+
+bool is_position_on_snake(Position position, Snake *snake) {
+    for (int i = 0; i < snake->length; i++) {
+        if (check_collision(position, snake->positions[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void update_food_position(Food *food, Snake *snake) {
+    Position newFoodPosition;
+
+    do {
+        //newFoodPosition.x = rand() % GRID_WIDTH;
+        //newFoodPosition.y = rand() % GRID_HEIGHT;
+
+        // Generate a new food position, keeping a 1-cell margin from the edges
+        newFoodPosition.x = 1 + rand() % (GRID_WIDTH - 2);
+        newFoodPosition.y = 1 + rand() % (GRID_HEIGHT - 2);
+    } while (is_position_on_snake(newFoodPosition, snake));
+
+    food->position = newFoodPosition;
+}
+
 bool show_game_over_screen(SDL_Renderer *renderer) {
     TTF_Font *font = TTF_OpenFont("Roboto-Regular.ttf", 32); // Replace with the path to a font file
 
@@ -155,10 +183,6 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food) {
     SDL_RenderFillRect(renderer, &foodRect);
 }
 
-bool check_collision(Position a, Position b) {
-    return a.x == b.x && a.y == b.y;
-}
-
 void update_snake(Snake *snake, Food *food, bool *gameOver) {
     Position nextPosition = snake->positions[0];
 
@@ -210,12 +234,8 @@ void update_snake(Snake *snake, Food *food, bool *gameOver) {
         // Add a new segment to the snake's tail
         snake->positions[snake->length - 1] = snake->positions[snake->length - 2];
 
-        //food->position.x = rand() % GRID_WIDTH;
-        //food->position.y = rand() % GRID_HEIGHT;
-
-        // Generate a new food position, keeping a 1-cell margin from the edges
-        food->position.x = 1 + rand() % (GRID_WIDTH - 2);
-        food->position.y = 1 + rand() % (GRID_HEIGHT - 2);
+        // Update food position
+        update_food_position(food, snake);
     }
 }
 
@@ -276,8 +296,7 @@ void game_loop(SDL_Renderer *renderer) {
     init_snake(&snake);
 
     srand(time(NULL));
-    food.position.x = rand() % GRID_WIDTH;
-    food.position.y = rand() % GRID_HEIGHT;
+    update_food_position(&food, &snake);
 
     Uint32 previousTime = SDL_GetTicks();
     Uint32 elapsedTime = 0;
