@@ -63,8 +63,8 @@ void update_food_position(Food *food, Snake *snake) {
         //newFoodPosition.y = rand() % GRID_HEIGHT;
 
         // Generate a new food position, keeping a 1-cell margin from the edges
-        newFoodPosition.x = 1 + rand() % (GRID_WIDTH - 2);
-        newFoodPosition.y = 1 + rand() % (GRID_HEIGHT - 2);
+        newFoodPosition.x = 2 + rand() % (GRID_WIDTH - 3);
+        newFoodPosition.y = 2 + rand() % (GRID_HEIGHT - 3);
     } while (is_position_on_snake(newFoodPosition, snake));
 
     food->position = newFoodPosition;
