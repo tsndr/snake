@@ -41,6 +41,7 @@ void init_snake(Snake *snake) {
     snake->positions[0].x = GRID_WIDTH / 2;
     snake->positions[0].y = GRID_HEIGHT / 2;
     snake->hitWall = false;
+    snake->hitBody = false;
 }
 
 bool check_collision(Position a, Position b) {
