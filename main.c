@@ -313,7 +313,7 @@ void update_snake(Snake *snake, Food *food, bool *game_over) {
     }
 }
 
-void handle_input(Snake *snake) {
+void handle_input(Snake *snake, bool *paused) {
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
@@ -350,8 +350,7 @@ void handle_input(Snake *snake) {
                     }
                     break;
                 case SDLK_ESCAPE:
-                case SDLK_q:
-                    exit(0);
+                    *paused = !*paused;
                     break;
                 default:
                     break;
@@ -360,9 +359,28 @@ void handle_input(Snake *snake) {
     }
 }
 
+void draw_pause_message(SDL_Renderer *renderer, TTF_Font *font) {
+    // Clear the screen with a black background
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderClear(renderer);
+
+    SDL_Color text_color = {255, 255, 255}; // White color
+
+    SDL_Surface *pause_surface = TTF_RenderText_Solid(font, "Paused - Press 'Esc' to continue", text_color);
+    SDL_Texture *pause_texture = SDL_CreateTextureFromSurface(renderer, pause_surface);
+    SDL_Rect pause_rect = {(SCREEN_WIDTH - pause_surface->w) / 2, (SCREEN_HEIGHT - pause_surface->h) / 2, pause_surface->w, pause_surface->h};
+
+    SDL_RenderCopy(renderer, pause_texture, NULL, &pause_rect);
+
+    // Clean up
+    SDL_DestroyTexture(pause_texture);
+    SDL_FreeSurface(pause_surface);
+}
+
 void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
     bool running = true;
     bool game_over = false;
+    bool paused = false;
 
     Food food;
 
@@ -373,21 +391,27 @@ void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
     Uint32 elapsedTime = 0;
 
     while (running) {
-        handle_input(snake);
+        handle_input(snake, &paused);
 
-        elapsedTime = SDL_GetTicks() - previousTime;
-        if (elapsedTime >= SNAKE_SPEED) {
-            update_snake(snake, &food, &game_over);
-            previousTime = SDL_GetTicks();
+        if (!paused) {
+            elapsedTime = SDL_GetTicks() - previousTime;
+            if (elapsedTime >= SNAKE_SPEED) {
+                update_snake(snake, &food, &game_over);
+                previousTime = SDL_GetTicks();
+            }
+
+            if (game_over) {
+                running = false;
+            }
+
+            SDL_RenderClear(renderer);
+
+            draw(renderer, snake, &food, snake->length - 2, font);
+        } else {
+            SDL_RenderClear(renderer);
+
+            draw_pause_message(renderer, font);
         }
-
-        if (game_over) {
-            running = false;
-        }
-
-        SDL_RenderClear(renderer);
-
-        draw(renderer, snake, &food, snake->length - 2, font);
 
         SDL_RenderPresent(renderer);
     }
