@@ -27,6 +27,7 @@ typedef struct {
     Direction direction;
     Direction nextDirection;
     bool hitWall;
+    bool hitBody;
 } Snake;
 
 typedef struct {
@@ -70,14 +71,7 @@ void update_food_position(Food *food, Snake *snake) {
     food->position = newFoodPosition;
 }
 
-bool show_game_over_screen(SDL_Renderer *renderer) {
-    TTF_Font *font = TTF_OpenFont("Roboto-Regular.ttf", 32); // Replace with the path to a font file
-
-    if (font == NULL) {
-        printf("Failed to load font: %s\n", TTF_GetError());
-        exit(1);
-    }
-
+bool show_game_over_screen(SDL_Renderer *renderer, TTF_Font *font) {
     SDL_Color textColor = {255, 255, 255};
 
     SDL_Surface *textSurface1;
@@ -167,7 +161,23 @@ void initialize(SDL_Window **window, SDL_Renderer **renderer) {
     }
 }
 
-void draw(SDL_Renderer *renderer, Snake *snake, Food *food) {
+void draw_score(SDL_Renderer *renderer, int score, TTF_Font *font) {
+    SDL_Color textColor = {255, 255, 255}; // White color
+    char scoreText[64];
+    snprintf(scoreText, sizeof(scoreText), "%d", score);
+
+    SDL_Surface *scoreSurface = TTF_RenderText_Solid(font, scoreText, textColor);
+    SDL_Texture *scoreTexture = SDL_CreateTextureFromSurface(renderer, scoreSurface);
+    SDL_Rect scoreRect = {SCREEN_WIDTH - scoreSurface->w - 10, 10, scoreSurface->w, scoreSurface->h};
+
+    SDL_RenderCopy(renderer, scoreTexture, NULL, &scoreRect);
+
+    // Clean up
+    SDL_DestroyTexture(scoreTexture);
+    SDL_FreeSurface(scoreSurface);
+}
+
+void draw(SDL_Renderer *renderer, Snake *snake, Food *food, int score, TTF_Font *font) {
     // Clear the screen with a black background
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
@@ -183,6 +193,8 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food) {
     SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
     SDL_Rect foodRect = {food->position.x * SNAKE_SIZE, food->position.y * SNAKE_SIZE, SNAKE_SIZE, SNAKE_SIZE};
     SDL_RenderFillRect(renderer, &foodRect);
+
+    draw_score(renderer, score, font);
 }
 
 void update_snake(Snake *snake, Food *food, bool *gameOver) {
@@ -215,16 +227,24 @@ void update_snake(Snake *snake, Food *food, bool *gameOver) {
             snake->hitWall = true;
             return;
         }
-    } else {
-        snake->hitWall = false;
     }
 
+    snake->hitWall = false;
+
+    // Hitting body
     for (int i = 1; i < snake->length; i++) {
         if (check_collision(nextPosition, snake->positions[i])) {
-            *gameOver = true;
-            return;
+            if (snake->hitBody) {
+                *gameOver = true;
+                return;
+            } else {
+                snake->hitBody = true;
+                return;
+            }
         }
     }
+
+    snake->hitBody = false;
 
     for (int i = snake->length - 1; i > 0; i--) {
         snake->positions[i] = snake->positions[i - 1];
@@ -290,7 +310,7 @@ void handle_input(Snake *snake) {
     }
 }
 
-void game_loop(SDL_Renderer *renderer) {
+void game_loop(SDL_Renderer *renderer, TTF_Font *font) {
     bool running = true;
     bool gameOver = false;
 
@@ -319,7 +339,7 @@ void game_loop(SDL_Renderer *renderer) {
         }
 
         SDL_RenderClear(renderer);
-        draw(renderer, &snake, &food);
+        draw(renderer, &snake, &food, snake.length - 2, font);
         SDL_RenderPresent(renderer);
     }
 }
@@ -330,10 +350,17 @@ int main(int argc, char *argv[]) {
 
     initialize(&window, &renderer);
 
+    TTF_Font *font = TTF_OpenFont("Roboto-Regular.ttf", 32);
+
+    if (font == NULL) {
+        printf("Failed to load font: %s\n", TTF_GetError());
+        exit(1);
+    }
+
     bool restart;
     do {
-        game_loop(renderer);
-        restart = show_game_over_screen(renderer);
+        game_loop(renderer, font);
+        restart = show_game_over_screen(renderer, font);
     } while (restart);
 
     SDL_DestroyRenderer(renderer);
