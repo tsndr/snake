@@ -72,29 +72,6 @@ void update_food_position(Food *food, Snake *snake) {
     food->position = newFoodPosition;
 }
 
-//bool handle_game_over_input(Snake *snake) {
-//    SDL_Event event;
-//
-//    while (SDL_PollEvent(&event)) {
-//        if (event.type == SDL_QUIT) {
-//            exit(0);
-//        } else if (event.type == SDL_KEYDOWN) {
-//            switch (event.key.keysym.sym) {
-//                case SDLK_RETURN:
-//                case SDLK_SPACE:
-//                    return true;
-//                    break;
-//                case SDLK_ESCAPE:
-//                case SDLK_q:
-//                    return false;
-//                    break;
-//                default:
-//                    break;
-//            }
-//        }
-//    }
-//}
-
 bool show_game_over_screen(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
     SDL_Color text_color = {255, 255, 255};
 
