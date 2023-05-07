@@ -25,6 +25,7 @@ typedef struct {
     Position positions[GRID_WIDTH * GRID_HEIGHT];
     int length;
     Direction direction;
+    Direction nextDirection;
     bool hitWall;
 } Snake;
 
@@ -35,6 +36,7 @@ typedef struct {
 void init_snake(Snake *snake) {
     snake->length = 2;
     snake->direction = RIGHT;
+    snake->nextDirection = RIGHT;
     snake->positions[0].x = GRID_WIDTH / 2;
     snake->positions[0].y = GRID_HEIGHT / 2;
     snake->hitWall = false;
@@ -184,6 +186,8 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food) {
 }
 
 void update_snake(Snake *snake, Food *food, bool *gameOver) {
+    snake->direction = snake->nextDirection;
+
     Position nextPosition = snake->positions[0];
 
     switch (snake->direction) {
@@ -239,7 +243,7 @@ void update_snake(Snake *snake, Food *food, bool *gameOver) {
     }
 }
 
-void handle_input(Direction *snakeDirection) {
+void handle_input(Snake *snake) {
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
@@ -250,29 +254,29 @@ void handle_input(Direction *snakeDirection) {
                 case SDLK_UP:
                 case SDLK_w:
                 case SDLK_i:
-                    if (*snakeDirection != DOWN) {
-                        *snakeDirection = UP;
+                    if (snake->direction != DOWN) {
+                        snake->nextDirection = UP;
                     }
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
                 case SDLK_k:
-                    if (*snakeDirection != UP) {
-                        *snakeDirection = DOWN;
+                    if (snake->direction != UP) {
+                        snake->nextDirection = DOWN;
                     }
                     break;
                 case SDLK_LEFT:
                 case SDLK_a:
                 case SDLK_j:
-                    if (*snakeDirection != RIGHT) {
-                        *snakeDirection = LEFT;
+                    if (snake->direction != RIGHT) {
+                        snake->nextDirection = LEFT;
                     }
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
                 case SDLK_l:
-                    if (*snakeDirection != LEFT) {
-                        *snakeDirection = RIGHT;
+                    if (snake->direction != LEFT) {
+                        snake->nextDirection = RIGHT;
                     }
                     break;
                 case SDLK_ESCAPE:
@@ -302,7 +306,7 @@ void game_loop(SDL_Renderer *renderer) {
     Uint32 elapsedTime = 0;
 
     while (running) {
-        handle_input(&snake.direction);
+        handle_input(&snake);
 
         elapsedTime = SDL_GetTicks() - previousTime;
         if (elapsedTime >= SNAKE_SPEED) {
