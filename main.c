@@ -14,7 +14,12 @@
 #define GRID_HEIGHT (SCREEN_HEIGHT / SNAKE_SIZE)
 
 // Enums
-typedef enum { UP, DOWN, LEFT, RIGHT } Direction;
+typedef enum {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+} Direction;
 
 // Structs
 typedef struct {
