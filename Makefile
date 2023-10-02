@@ -1,12 +1,14 @@
 CC=clang
-CFLAGS=-O3 -Wall $(shell pkg-config --cflags --libs SDL2 SDL2_ttf)
+CFLAGS=-O3 -Wall -Wextra -ggdb $(shell pkg-config --cflags --libs SDL2 SDL2_ttf)
+SRC=src/main.c
+DIST=dist/snake
 
-default: src/main.c clean
+default: $(SRC) clean
 	mkdir -p dist/
-	$(CC) $(CFLAGS) -o dist/snake src/main.c
+	$(CC) $(CFLAGS) -o $(DIST) $(SRC)
 
-run: dist/snake
-	./dist/snake
+run: $(DIST)
+	./$(DIST)
 
 clean:
 	rm -rf dist/
