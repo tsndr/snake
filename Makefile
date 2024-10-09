@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-O3 -Wall -Wextra -ggdb $(shell pkg-config --cflags --libs SDL2 SDL2_ttf)
+CFLAGS=-O3 -Wall -Wextra -ggdb $(shell pkg-config --cflags --libs sdl2 SDL2_ttf)
 SRC=src/main.c
 DIST=dist/snake
 
