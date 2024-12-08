@@ -6,10 +6,10 @@
 #include <time.h>
 
 // Constants
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
-#define SNAKE_SIZE 20
-#define SNAKE_SPEED 100
+#define SCREEN_WIDTH 640 // px
+#define SCREEN_HEIGHT 480 // px
+#define SNAKE_SIZE 20 // px
+#define GAME_TICK 100 // ms
 #define GRID_WIDTH (SCREEN_WIDTH / SNAKE_SIZE)
 #define GRID_HEIGHT (SCREEN_HEIGHT / SNAKE_SIZE)
 
@@ -40,13 +40,13 @@ typedef struct {
 } Food;
 
 void init_snake(Snake *snake) {
-    snake->length = 2;
-    snake->direction = RIGHT;
-    snake->next_direction = RIGHT;
-    snake->positions[0].x = GRID_WIDTH / 2;
-    snake->positions[0].y = GRID_HEIGHT / 2;
     snake->hit_wall = false;
     snake->hit_body = false;
+    snake->positions[0].x = GRID_WIDTH / 5;
+    snake->positions[0].y = GRID_HEIGHT / 2;
+    snake->direction = RIGHT;
+    snake->next_direction = RIGHT;
+    snake->length = 2;
 }
 
 bool check_collision(Position a, Position b) {
@@ -69,7 +69,7 @@ void update_food_position(Food *food, Snake *snake) {
         //newFoodPosition.x = rand() % GRID_WIDTH;
         //newFoodPosition.y = rand() % GRID_HEIGHT;
 
-        // Generate a new food position, keeping a 1-cell margin from the edges
+        // Generate a new food position, keeping a 1-cell space from the edges
         newFoodPosition.x = 2 + rand() % (GRID_WIDTH - 3);
         newFoodPosition.y = 2 + rand() % (GRID_HEIGHT - 3);
     } while (is_position_on_snake(newFoodPosition, snake));
@@ -77,90 +77,195 @@ void update_food_position(Food *food, Snake *snake) {
     food->position = newFoodPosition;
 }
 
-bool show_game_over_screen(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
-    SDL_Color text_color = {255, 255, 255};
+bool draw_pause_screen(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderClear(renderer);
 
-    SDL_Surface *text_surface1;
-    SDL_Texture *text_texture1;
-    SDL_Rect text_rect1;
+    SDL_Color text_color = {255, 255, 255, 255};
 
-    SDL_Surface *text_surface2;
-    SDL_Texture *text_texture2;
-    SDL_Rect text_rect2;
+    SDL_Surface *title_surface;
+    SDL_Texture *title_texture;
+    SDL_Rect title_rect;
 
-    SDL_Surface *text_surface3;
-    SDL_Texture *text_texture3;
-    SDL_Rect text_rect3;
+    SDL_Surface *score_surface;
+    SDL_Texture *score_texture;
+    SDL_Rect score_rect;
+
+    SDL_Surface *text1_surface;
+    SDL_Texture *text1_texture;
+    SDL_Rect text1_rect;
+
+    SDL_Surface *text2_surface;
+    SDL_Texture *text2_texture;
+    SDL_Rect text2_rect;
+
+    char score_text[64];
+    snprintf(score_text, sizeof(score_text), "Score: %d", snake->length - 2);
+
+    title_surface = TTF_RenderText_Solid(font, "- PAUSED -", text_color);
+    score_surface = TTF_RenderText_Solid(font, score_text, text_color);
+    text1_surface = TTF_RenderText_Solid(font, "Press 'Esc' to continue,", text_color);
+    text2_surface = TTF_RenderText_Solid(font, "'R' to restart, or 'Q' to quit.", text_color);
+
+    title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+    score_texture = SDL_CreateTextureFromSurface(renderer, score_surface);
+    text1_texture = SDL_CreateTextureFromSurface(renderer, text1_surface);
+    text2_texture = SDL_CreateTextureFromSurface(renderer, text2_surface);
+
+    title_rect.x = (SCREEN_WIDTH - title_surface->w) / 2;
+    title_rect.y = (SCREEN_HEIGHT - title_surface->h) / 2 - title_surface->h * 3;
+    title_rect.w = title_surface->w;
+    title_rect.h = title_surface->h;
+
+    score_rect.x = (SCREEN_WIDTH - score_surface->w) / 2;
+    score_rect.y = (SCREEN_HEIGHT - score_surface->h) / 2 - score_surface->h;
+    score_rect.w = score_surface->w;
+    score_rect.h = score_surface->h;
+
+    text1_rect.x = (SCREEN_WIDTH - text1_surface->w) / 2;
+    text1_rect.y = (SCREEN_HEIGHT - text1_surface->h) / 2 + text1_surface->h;
+    text1_rect.w = text1_surface->w;
+    text1_rect.h = text1_surface->h;
+
+    text2_rect.x = (SCREEN_WIDTH - text2_surface->w) / 2;
+    text2_rect.y = (SCREEN_HEIGHT - text2_surface->h) / 2 + text2_surface->h * 2;
+    text2_rect.w = text2_surface->w;
+    text2_rect.h = text2_surface->h;
+
+    SDL_RenderCopy(renderer, title_texture, NULL, &title_rect);
+    SDL_RenderCopy(renderer, score_texture, NULL, &score_rect);
+    SDL_RenderCopy(renderer, text1_texture, NULL, &text1_rect);
+    SDL_RenderCopy(renderer, text2_texture, NULL, &text2_rect);
+
+    SDL_RenderPresent(renderer);
+
+    SDL_DestroyTexture(title_texture);
+    SDL_DestroyTexture(score_texture);
+    SDL_DestroyTexture(text1_texture);
+    SDL_DestroyTexture(text2_texture);
+
+    SDL_FreeSurface(title_surface);
+    SDL_FreeSurface(score_surface);
+    SDL_FreeSurface(text1_surface);
+    SDL_FreeSurface(text2_surface);
+
+    SDL_Event event;
+
+    while (true) {
+        SDL_PollEvent(&event);
+
+        if (event.type == SDL_QUIT) {
+            exit(0);
+        } else if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_SPACE:
+                case SDLK_RETURN:
+                case SDLK_ESCAPE:
+                    return false;
+                case SDLK_r:
+                    return true;
+                    break;
+                case SDLK_q:
+                    exit(0);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+bool draw_game_over_screen(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
+    SDL_Color text_color = {255, 255, 255, 255};
+
+    SDL_Surface *title_surface;
+    SDL_Texture *title_texture;
+    SDL_Rect title_rect;
+
+    SDL_Surface *score_surface;
+    SDL_Texture *score_texture;
+    SDL_Rect score_rect;
+
+    SDL_Surface *text1_surface;
+    SDL_Texture *text1_texture;
+    SDL_Rect text1_rect;
+
+    SDL_Surface *text2_surface;
+    SDL_Texture *text2_texture;
+    SDL_Rect text2_rect;
 
     char scoreText[64];
     snprintf(scoreText, sizeof(scoreText), "Score: %d", snake->length - 2);
 
-    text_surface1 = TTF_RenderText_Solid(font, "Game Over!", text_color);
-    text_surface2 = TTF_RenderText_Solid(font, scoreText, text_color);
-    text_surface3 = TTF_RenderText_Solid(font, "Press Enter to restart, or Esc to quit.", text_color);
+    title_surface = TTF_RenderText_Solid(font, "- GAME OVER -", text_color);
+    score_surface = TTF_RenderText_Solid(font, scoreText, text_color);
+    text1_surface = TTF_RenderText_Solid(font, "Press 'Enter' to restart", text_color);
+    text2_surface = TTF_RenderText_Solid(font, "or 'Esc' to quit.", text_color);
 
-    text_texture1 = SDL_CreateTextureFromSurface(renderer, text_surface1);
-    text_texture2 = SDL_CreateTextureFromSurface(renderer, text_surface2);
-    text_texture3 = SDL_CreateTextureFromSurface(renderer, text_surface3);
+    title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+    score_texture = SDL_CreateTextureFromSurface(renderer, score_surface);
+    text1_texture = SDL_CreateTextureFromSurface(renderer, text1_surface);
+    text2_texture = SDL_CreateTextureFromSurface(renderer, text2_surface);
 
-    text_rect1.x = (SCREEN_WIDTH - text_surface1->w) / 2;
-    text_rect1.y = (SCREEN_HEIGHT - text_surface1->h) / 2 - text_surface2->h;
-    text_rect1.w = text_surface1->w;
-    text_rect1.h = text_surface1->h;
+    title_rect.x = (SCREEN_WIDTH - title_surface->w) / 2;
+    title_rect.y = (SCREEN_HEIGHT - title_surface->h) / 2 - title_surface->h * 3;
+    title_rect.w = title_surface->w;
+    title_rect.h = title_surface->h;
 
-    text_rect2.x = (SCREEN_WIDTH - text_surface2->w) / 2;
-    text_rect2.y = (SCREEN_HEIGHT - text_surface2->h) / 2;
-    text_rect2.w = text_surface2->w;
-    text_rect2.h = text_surface2->h;
+    score_rect.x = (SCREEN_WIDTH - score_surface->w) / 2;
+    score_rect.y = (SCREEN_HEIGHT - score_surface->h) / 2 - score_surface->h;
+    score_rect.w = score_surface->w;
+    score_rect.h = score_surface->h;
 
-    text_rect3.x = (SCREEN_WIDTH - text_surface3->w) / 2;
-    text_rect3.y = (SCREEN_HEIGHT - text_surface3->h) / 2 + text_surface2->h;
-    text_rect3.w = text_surface3->w;
-    text_rect3.h = text_surface3->h;
+    text1_rect.x = (SCREEN_WIDTH - text1_surface->w) / 2;
+    text1_rect.y = (SCREEN_HEIGHT - text1_surface->h) / 2 + text1_surface->h;
+    text1_rect.w = text1_surface->w;
+    text1_rect.h = text1_surface->h;
 
-    SDL_Event event;
-    bool restart = false;
-    bool wait_for_input = true;
+    text2_rect.x = (SCREEN_WIDTH - text2_surface->w) / 2;
+    text2_rect.y = (SCREEN_HEIGHT - text2_surface->h) / 2 + text2_surface->h * 2;
+    text2_rect.w = text2_surface->w;
+    text2_rect.h = text2_surface->h;
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set the draw color to black
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, text_texture1, NULL, &text_rect1);
-    SDL_RenderCopy(renderer, text_texture2, NULL, &text_rect2);
-    SDL_RenderCopy(renderer, text_texture3, NULL, &text_rect3);
+    SDL_RenderCopy(renderer, title_texture, NULL, &title_rect);
+    SDL_RenderCopy(renderer, score_texture, NULL, &score_rect);
+    SDL_RenderCopy(renderer, text1_texture, NULL, &text1_rect);
+    SDL_RenderCopy(renderer, text2_texture, NULL, &text2_rect);
+
     SDL_RenderPresent(renderer);
 
-    while (wait_for_input) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                exit(0);
-            } else if (event.type == SDL_KEYDOWN) {
-                switch (event.key.keysym.sym) {
-                    case SDLK_RETURN:
-                    case SDLK_SPACE:
-                        restart = true;
-                        wait_for_input = false;
-                        break;
-                    case SDLK_ESCAPE:
-                    case SDLK_q:
-                        restart = false;
-                        wait_for_input = false;
-                        break;
-                    default:
-                        break;
-                }
+    SDL_DestroyTexture(title_texture);
+    SDL_DestroyTexture(score_texture);
+    SDL_DestroyTexture(text1_texture);
+    SDL_DestroyTexture(text2_texture);
+
+    SDL_FreeSurface(title_surface);
+    SDL_FreeSurface(score_surface);
+    SDL_FreeSurface(text1_surface);
+    SDL_FreeSurface(text2_surface);
+
+    SDL_Event event;
+
+    while (true) {
+        SDL_PollEvent(&event);
+
+        if (event.type == SDL_QUIT) {
+            exit(0);
+        } else if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_RETURN:
+                case SDLK_SPACE:
+                    return true;
+                case SDLK_ESCAPE:
+                case SDLK_q:
+                    return false;
+                default:
+                    break;
             }
         }
     }
-
-    SDL_DestroyTexture(text_texture1);
-    SDL_DestroyTexture(text_texture2);
-    SDL_DestroyTexture(text_texture3);
-
-    SDL_FreeSurface(text_surface1);
-    SDL_FreeSurface(text_surface2);
-    SDL_FreeSurface(text_surface3);
-
-    return restart;
 }
 
 void initialize(SDL_Window **window, SDL_Renderer **renderer) {
@@ -184,7 +289,8 @@ void initialize(SDL_Window **window, SDL_Renderer **renderer) {
         exit(1);
     }
 
-    SDL_SetRenderDrawColor(*renderer, 0x1E, 0x1E, 0x1E, 0xFF);
+    //SDL_SetRenderDrawColor(*renderer, 0x1E, 0x1E, 0x1E, 0xFF);
+    SDL_SetRenderDrawColor(*renderer, 0x00, 0x00, 0x00, 0xFF);
 
     // Initialize TTF
     if (TTF_Init() == -1) {
@@ -194,7 +300,7 @@ void initialize(SDL_Window **window, SDL_Renderer **renderer) {
 }
 
 void draw_score(SDL_Renderer *renderer, int score, TTF_Font *font) {
-    SDL_Color text_color = {255, 255, 255}; // White color
+    SDL_Color text_color = {255, 255, 255, 255};
     char scoreText[64];
     snprintf(scoreText, sizeof(scoreText), "%d", score);
 
@@ -332,7 +438,7 @@ void handle_input(Snake *snake, bool *paused) {
                     }
                     break;
                 case SDLK_ESCAPE:
-                    *paused = !*paused;
+                    *paused = true;
                     break;
                 default:
                     break;
@@ -341,27 +447,7 @@ void handle_input(Snake *snake, bool *paused) {
     }
 }
 
-void draw_pause_message(SDL_Renderer *renderer, TTF_Font *font) {
-    // Clear the screen with a black background
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-    SDL_RenderClear(renderer);
-
-    SDL_Color text_color = {255, 255, 255}; // White color
-
-    SDL_Surface *pause_surface = TTF_RenderText_Solid(font, "Paused - Press 'Esc' to continue", text_color);
-    SDL_Texture *pause_texture = SDL_CreateTextureFromSurface(renderer, pause_surface);
-    SDL_Rect pause_rect = {(SCREEN_WIDTH - pause_surface->w) / 2, (SCREEN_HEIGHT - pause_surface->h) / 2, pause_surface->w, pause_surface->h};
-
-    SDL_RenderCopy(renderer, pause_texture, NULL, &pause_rect);
-
-    // Clean up
-    SDL_DestroyTexture(pause_texture);
-    SDL_FreeSurface(pause_surface);
-}
-
-void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
-    bool running = true;
-    bool game_over = false;
+void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake, bool *game_over) {
     bool paused = false;
 
     Food food;
@@ -369,32 +455,29 @@ void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake) {
     srand(time(NULL));
     update_food_position(&food, snake);
 
-    Uint32 previousTime = SDL_GetTicks();
-    Uint32 elapsedTime = 0;
+    Uint32 previous_time = SDL_GetTicks();
+    Uint32 elapsed_time = 0;
 
-    while (running) {
+    while (!*game_over) {
+        elapsed_time = SDL_GetTicks() - previous_time;
+        if (elapsed_time < GAME_TICK)
+            continue;
+        previous_time = SDL_GetTicks();
+
         handle_input(snake, &paused);
 
-        if (!paused) {
-            elapsedTime = SDL_GetTicks() - previousTime;
-            if (elapsedTime >= SNAKE_SPEED) {
-                update_snake(snake, &food, &game_over);
-                previousTime = SDL_GetTicks();
-            }
-
-            if (game_over) {
-                running = false;
-            }
-
-            SDL_RenderClear(renderer);
-
-            draw(renderer, snake, &food, snake->length - 2, font);
-        } else {
-            SDL_RenderClear(renderer);
-
-            draw_pause_message(renderer, font);
+        if (paused) {
+            draw_pause_screen(renderer, font, snake);
+            paused = false;
+            continue;
         }
 
+        update_snake(snake, &food, game_over);
+
+        if (*game_over)
+            break;
+
+        draw(renderer, snake, &food, snake->length - 2, font);
         SDL_RenderPresent(renderer);
     }
 }
@@ -404,10 +487,11 @@ int main(int argc, char *argv[]) {
     SDL_Renderer *renderer = NULL;
     Snake snake;
     bool restart = false;
+    bool game_over = false;
 
     initialize(&window, &renderer);
 
-    TTF_Font *font = TTF_OpenFont("Roboto-Regular.ttf", 32);
+    TTF_Font *font = TTF_OpenFont("retro-gaming.ttf", 24);
 
     if (font == NULL) {
         printf("Failed to load font: %s\n", TTF_GetError());
@@ -416,12 +500,13 @@ int main(int argc, char *argv[]) {
 
     do {
         init_snake(&snake);
+        game_loop(renderer, font, &snake, &game_over);
 
-        game_loop(renderer, font, &snake);
-
-        restart = show_game_over_screen(renderer, font, &snake);
+        if (game_over) {
+            restart = draw_game_over_screen(renderer, font, &snake);
+            game_over = false;
+        }
     } while (restart);
-
 
     TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
