@@ -301,18 +301,18 @@ void initialize(SDL_Window **window, SDL_Renderer **renderer) {
 
 void draw_score(SDL_Renderer *renderer, int score, TTF_Font *font) {
     SDL_Color text_color = {255, 255, 255, 255};
-    char scoreText[64];
-    snprintf(scoreText, sizeof(scoreText), "%d", score);
+    char score_text[64];
+    snprintf(score_text, sizeof(score_text), "%d", score);
 
-    SDL_Surface *scoreSurface = TTF_RenderText_Solid(font, scoreText, text_color);
-    SDL_Texture *scoreTexture = SDL_CreateTextureFromSurface(renderer, scoreSurface);
-    SDL_Rect score_rect = {SCREEN_WIDTH - scoreSurface->w - 10, 10, scoreSurface->w, scoreSurface->h};
+    SDL_Surface *score_surface = TTF_RenderText_Solid(font, score_text, text_color);
+    SDL_Texture *score_texture = SDL_CreateTextureFromSurface(renderer, score_surface);
+    SDL_Rect score_rect = {SCREEN_WIDTH - score_surface->w - 10, 10, score_surface->w, score_surface->h};
 
-    SDL_RenderCopy(renderer, scoreTexture, NULL, &score_rect);
+    SDL_RenderCopy(renderer, score_texture, NULL, &score_rect);
 
     // Clean up
-    SDL_DestroyTexture(scoreTexture);
-    SDL_FreeSurface(scoreSurface);
+    SDL_DestroyTexture(score_texture);
+    SDL_FreeSurface(score_surface);
 }
 
 void draw(SDL_Renderer *renderer, Snake *snake, Food *food, int score, TTF_Font *font) {
@@ -338,26 +338,26 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food, int score, TTF_Font 
 void update_snake(Snake *snake, Food *food, bool *game_over) {
     snake->direction = snake->next_direction;
 
-    Position nextPosition = snake->positions[0];
+    Position next_position = snake->positions[0];
 
     switch (snake->direction) {
         case UP:
-            nextPosition.y--;
+            next_position.y--;
             break;
         case DOWN:
-            nextPosition.y++;
+            next_position.y++;
             break;
         case LEFT:
-            nextPosition.x--;
+            next_position.x--;
             break;
         case RIGHT:
-            nextPosition.x++;
+            next_position.x++;
             break;
     }
 
     // Hitting wall
-    if (nextPosition.x < 0 || nextPosition.x >= GRID_WIDTH ||
-        nextPosition.y < 0 || nextPosition.y >= GRID_HEIGHT) {
+    if (next_position.x < 0 || next_position.x >= GRID_WIDTH ||
+        next_position.y < 0 || next_position.y >= GRID_HEIGHT) {
         if (snake->hit_wall) {
             *game_over = true;
             return;
@@ -371,7 +371,7 @@ void update_snake(Snake *snake, Food *food, bool *game_over) {
 
     // Hitting body
     for (int i = 1; i < snake->length; i++) {
-        if (check_collision(nextPosition, snake->positions[i])) {
+        if (check_collision(next_position, snake->positions[i])) {
             if (snake->hit_body) {
                 *game_over = true;
                 return;
@@ -388,9 +388,9 @@ void update_snake(Snake *snake, Food *food, bool *game_over) {
         snake->positions[i] = snake->positions[i - 1];
     }
 
-    snake->positions[0] = nextPosition;
+    snake->positions[0] = next_position;
 
-    if (check_collision(nextPosition, food->position)) {
+    if (check_collision(next_position, food->position)) {
         snake->length++;
 
         // Add a new segment to the snake's tail
