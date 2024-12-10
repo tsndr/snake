@@ -482,7 +482,7 @@ void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake, bool *game_
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(/*int argc, char *argv[]*/) {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     Snake snake;
