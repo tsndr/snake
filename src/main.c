@@ -491,11 +491,11 @@ int main(/*int argc, char *argv[]*/) {
 
     initialize(&window, &renderer);
 
-    TTF_Font *font = TTF_OpenFont("retro-gaming.ttf", 24);
+    TTF_Font *font = TTF_OpenFont("retro.ttf", 24);
 
     if (font == NULL) {
         printf("Failed to load font: %s\n", TTF_GetError());
-        exit(1);
+        return 1;
     }
 
     do {
