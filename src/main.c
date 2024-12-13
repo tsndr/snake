@@ -6,12 +6,12 @@
 #include <time.h>
 
 // Constants
-#define SCREEN_WIDTH 640 // px
-#define SCREEN_HEIGHT 480 // px
-#define SNAKE_SIZE 20 // px
 #define GAME_TICK 100 // ms
-#define GRID_WIDTH (SCREEN_WIDTH / SNAKE_SIZE)
-#define GRID_HEIGHT (SCREEN_HEIGHT / SNAKE_SIZE)
+#define SNAKE_SIZE 24 // px
+#define GRID_WIDTH 32 // units
+#define GRID_HEIGHT 24 // units
+#define SCREEN_WIDTH (GRID_WIDTH * SNAKE_SIZE)
+#define SCREEN_HEIGHT (GRID_HEIGHT * SNAKE_SIZE)
 
 // Enums
 typedef enum {
@@ -300,13 +300,13 @@ void initialize(SDL_Window **window, SDL_Renderer **renderer) {
 }
 
 void draw_score(SDL_Renderer *renderer, int score, TTF_Font *font) {
-    SDL_Color text_color = {255, 255, 255, 255};
+    SDL_Color text_color = {0xFF, 0xFF, 0xFF, 0xFF};
     char score_text[64];
     snprintf(score_text, sizeof(score_text), "%d", score);
 
     SDL_Surface *score_surface = TTF_RenderText_Solid(font, score_text, text_color);
     SDL_Texture *score_texture = SDL_CreateTextureFromSurface(renderer, score_surface);
-    SDL_Rect score_rect = {SCREEN_WIDTH - score_surface->w - 10, 10, score_surface->w, score_surface->h};
+    SDL_Rect score_rect = {SCREEN_WIDTH - score_surface->w - SNAKE_SIZE, SNAKE_SIZE, score_surface->w, score_surface->h};
 
     SDL_RenderCopy(renderer, score_texture, NULL, &score_rect);
 
@@ -319,6 +319,27 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food, int score, TTF_Font 
     // Clear the screen with a black background
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
+
+    // Draw background grid
+    SDL_SetRenderDrawColor(renderer, 0x11, 0x11, 0x11, 0xFF);
+
+    // Grid lines
+    /*for (int y = SNAKE_SIZE; y < SCREEN_HEIGHT; y += SNAKE_SIZE) {
+        SDL_Rect rect = {0, y-1, SCREEN_WIDTH, 2};
+        SDL_RenderFillRect(renderer, &rect);
+    }
+    for (int x = SNAKE_SIZE; x < SCREEN_WIDTH; x += SNAKE_SIZE) {
+        SDL_Rect rect = {x-1, 0, 2, SCREEN_HEIGHT};
+        SDL_RenderFillRect(renderer, &rect);
+    }*/
+
+    // Dotted grid
+    for (int y = SNAKE_SIZE; y < SCREEN_HEIGHT; y += SNAKE_SIZE) {
+        for (int x = SNAKE_SIZE; x < SCREEN_WIDTH; x += SNAKE_SIZE) {
+            SDL_Rect rect = {x-1, y-1, 2, 2};
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
 
     // Draw the snake (white color)
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -412,30 +433,30 @@ void handle_input(Snake *snake, bool *paused) {
                 case SDLK_UP:
                 case SDLK_w:
                 case SDLK_i:
-                    if (snake->direction != DOWN) {
-                        snake->next_direction = UP;
-                    }
+                    if (snake->direction == DOWN)
+                        break;
+                    snake->next_direction = UP;
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
                 case SDLK_k:
-                    if (snake->direction != UP) {
-                        snake->next_direction = DOWN;
-                    }
+                    if (snake->direction == UP)
+                        break;
+                    snake->next_direction = DOWN;
                     break;
                 case SDLK_LEFT:
                 case SDLK_a:
                 case SDLK_j:
-                    if (snake->direction != RIGHT) {
-                        snake->next_direction = LEFT;
-                    }
+                    if (snake->direction == RIGHT)
+                        break;
+                    snake->next_direction = LEFT;
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
                 case SDLK_l:
-                    if (snake->direction != LEFT) {
-                        snake->next_direction = RIGHT;
-                    }
+                    if (snake->direction == LEFT)
+                        break;
+                    snake->next_direction = RIGHT;
                     break;
                 case SDLK_ESCAPE:
                     *paused = true;
@@ -459,12 +480,13 @@ void game_loop(SDL_Renderer *renderer, TTF_Font *font, Snake *snake, bool *game_
     Uint32 elapsed_time = 0;
 
     while (!*game_over) {
+
+        handle_input(snake, &paused);
+
         elapsed_time = SDL_GetTicks() - previous_time;
         if (elapsed_time < GAME_TICK)
             continue;
         previous_time = SDL_GetTicks();
-
-        handle_input(snake, &paused);
 
         if (paused) {
             draw_pause_screen(renderer, font, snake);
