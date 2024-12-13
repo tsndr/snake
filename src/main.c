@@ -321,7 +321,7 @@ void draw(SDL_Renderer *renderer, Snake *snake, Food *food, int score, TTF_Font 
     SDL_RenderClear(renderer);
 
     // Draw background grid
-    SDL_SetRenderDrawColor(renderer, 0x11, 0x11, 0x11, 0xFF);
+    SDL_SetRenderDrawColor(renderer, 0x33, 0x33, 0x33, 0xFF);
 
     // Grid lines
     /*for (int y = SNAKE_SIZE; y < SCREEN_HEIGHT; y += SNAKE_SIZE) {
